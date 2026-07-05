@@ -3,7 +3,6 @@ import json
 import random
 import os
 import websockets
-from datas import maps
 from main import SpyGame
 PORT= int(os.environ.get("PORT", 7777))
 rooms ={}
@@ -32,7 +31,7 @@ def create_room(host_client, host_name):
             return code
 async def handle_client(websocket):
     current_room_code = None
-    player_name = "Игрок"
+    player_name = ""
     try:
         async for message in websocket:
             data = json.loads(message)
