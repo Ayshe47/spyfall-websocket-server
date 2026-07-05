@@ -1,17 +1,42 @@
+import os
+import sys
 import customtkinter as ctk
 from PIL import Image
 from network import NetworkClient
 from tkinter import messagebox
 
-SERVER_URL = "wss://spyfall-websocket-server.onrender.com"
+
+def resource_path(relative_path):
+    """Возвращает путь к ресурсу как при запуске из Python, так и после сборки PyInstaller."""
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+# Вынос адреса сервера в переменные окружения (или использование дефолтного)
+SERVER_URL = os.getenv("SPYFALL_SERVER_URL", "wss://spyfall-websocket-server.onrender.com")
+
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        width = self.winfo_screenwidth()
-        height = self.winfo_screenheight()
-        self.geometry(f"{width}x{height}")
+
+        # Получаем размеры экрана для динамических фонов
+        self.screen_width = self.winfo_screenwidth()
+        self.screen_height = self.winfo_screenheight()
+
+        self.geometry(f"{self.screen_width}x{self.screen_height}")
         self.configure(fg_color="white")
+        self.title("Spyfall Game")
+
+        # Загрузка кастомного шрифта (PyInstaller тоже подтянет)
+        try:
+            ctk.FontManager.load_font(resource_path("RussoOne.ttf"))
+        except:
+            pass  # Если файла нет, используем системный
+
         self.network = NetworkClient(url=SERVER_URL, callback=self.network_callback)
         self.is_host = False
         self.room_code = ""
@@ -36,55 +61,33 @@ class App(ctk.CTk):
     def create_menu_screen(self):
         self.menu_frame = ctk.CTkFrame(self, fg_color="white")
 
-        width = self.winfo_screenwidth()
-        height = self.winfo_screenheight()
-
-        self.menu_bg = ctk.CTkImage(
-            light_image=Image.open("firstScreen.png"),
-            size=(width, height)
-        )
-
-        self.menu_bg_label = ctk.CTkLabel(
-            self.menu_frame,
-            image=self.menu_bg,
-            text=""
-        )
-        self.menu_bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        try:
+            self.menu_bg = ctk.CTkImage(
+                light_image=Image.open(resource_path("firstScreen.png")),
+                size=(self.screen_width, self.screen_height)
+            )
+            self.menu_bg_label = ctk.CTkLabel(self.menu_frame, image=self.menu_bg, text="")
+            self.menu_bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        except Exception as e:
+            print(f"Ошибка загрузки фона меню: {e}")
 
         self.name_entry = ctk.CTkEntry(
-            self.menu_frame,
-            width=650,
-            height=80,
-            corner_radius=0,
-            placeholder_text="ВАШЕ ИМЯ",
-            font=self.russo_font_big,
-            justify="center"
+            self.menu_frame, width=650, height=80, corner_radius=0,
+            placeholder_text="ВАШЕ ИМЯ", font=self.russo_font_big, justify="center"
         )
         self.name_entry.place(relx=0.55, y=500, anchor="w")
 
         self.create_btn = ctk.CTkButton(
-            self.menu_frame,
-            text="СОЗДАТЬ КОМНАТУ",
-            width=650,
-            height=80,
-            corner_radius=0,
-            font=self.russo_font_big,
-            fg_color="black",
-            hover_color="#333333",
-            command=self.req_create_room
+            self.menu_frame, text="СОЗДАТЬ КОМНАТУ", width=650, height=80,
+            corner_radius=0, font=self.russo_font_big, fg_color="black",
+            hover_color="#333333", command=self.req_create_room
         )
         self.create_btn.place(relx=0.55, y=650, anchor="w")
 
         join_screen_btn = ctk.CTkButton(
-            self.menu_frame,
-            text="ВОЙТИ В КОМНАТУ",
-            width=650,
-            height=80,
-            corner_radius=0,
-            font=self.russo_font_big,
-            fg_color="black",
-            hover_color="#333333",
-            command=lambda: self.show_screen(self.join_frame)
+            self.menu_frame, text="ВОЙТИ В КОМНАТУ", width=650, height=80,
+            corner_radius=0, font=self.russo_font_big, fg_color="black",
+            hover_color="#333333", command=lambda: self.show_screen(self.join_frame)
         )
         join_screen_btn.place(relx=0.55, y=800, anchor="w")
 
@@ -92,41 +95,45 @@ class App(ctk.CTk):
         self.join_frame = ctk.CTkFrame(self, fg_color="white")
 
         try:
-            join_bg_image = ctk.CTkImage(light_image=Image.open("joinbk.png"), dark_image=Image.open("joinbk.png"),
-                                         size=(1920, 1080))
+            join_bg_image = ctk.CTkImage(
+                light_image=Image.open(resource_path("joinbk2.png")),
+                dark_image=Image.open(resource_path("joinbk2.png")),
+                size=(self.screen_width, self.screen_height)
+            )
             join_bg_label = ctk.CTkLabel(self.join_frame, image=join_bg_image, text="")
             join_bg_label.place(relwidth=1, relheight=1)
             self.join_bg_image = join_bg_image
         except:
             pass
 
-        ctk.CTkLabel(self.join_frame, text="ПОДКЛЮЧЕНИЕ", font=("Arial", 50), text_color="black",
-                     bg_color="transparent").pack(pady=50)
-
         self.code_entry = ctk.CTkEntry(
             self.join_frame, width=550, height=80, placeholder_text="Код комнаты", font=self.russo_font_btn,
             justify="center"
         )
-        self.code_entry.place(relx=0.5, y=250, anchor="center")
+        self.code_entry.place(relx=0.5, y=410, anchor="center")
 
         join_btn = ctk.CTkButton(
             self.join_frame, text="ПОДКЛЮЧИТЬСЯ", width=550, height=80, font=self.russo_font_btn,
             fg_color="#4B555D", hover_color="#363E44", text_color="white", corner_radius=0, command=self.req_join_room
         )
-        join_btn.place(relx=0.5, y=360, anchor="center")
+        join_btn.place(relx=0.5, y=520, anchor="center")
 
         back_btn = ctk.CTkButton(
             self.join_frame, text="НАЗАД", width=550, height=80, font=self.russo_font_btn,
             fg_color="#9EB0BD", hover_color="#82939F", text_color="black", corner_radius=0,
             command=lambda: self.show_screen(self.menu_frame)
         )
-        back_btn.place(relx=0.5, y=470, anchor="center")
+        back_btn.place(relx=0.5, y=630, anchor="center")
 
     def create_lobby_screen(self):
         self.lobby_frame = ctk.CTkFrame(self)
+
         try:
-            bg_image = ctk.CTkImage(light_image=Image.open("joinbk.png"), dark_image=Image.open("joinbk.png"),
-                                    size=(1920, 1080))
+            bg_image = ctk.CTkImage(
+                light_image=Image.open(resource_path("joinbk.png")),
+                dark_image=Image.open(resource_path("joinbk.png")),
+                size=(self.screen_width, self.screen_height)
+            )
             bg_label = ctk.CTkLabel(self.lobby_frame, image=bg_image, text="")
             bg_label.place(relwidth=1, relheight=1)
             self.bg_image = bg_image
@@ -136,14 +143,15 @@ class App(ctk.CTk):
         self.room_container = ctk.CTkFrame(self.lobby_frame, fg_color="white")
         self.room_container.place(relx=0.5, y=80, anchor="center")
 
-        self.room_prefix_label = ctk.CTkLabel(self.room_container, text="Комната: ", font=self.russo_font_big, text_color="black")
+        self.room_prefix_label = ctk.CTkLabel(self.room_container, text="Комната: ", font=self.russo_font_big,
+                                              text_color="black")
         self.room_prefix_label.pack(side="left")
 
         self.room_label = ctk.CTkLabel(self.room_container, text="____", font=self.russo_font_big, text_color="red")
         self.room_label.pack(side="left")
 
         self.categories = {
-            "Математика": 1, "Взаимоотношения между людьми": 2, "Путешествия": 3,
+            "Математика": 1, "Общение и взаимодействие": 2, "Путешествия": 3,
             "Хобби": 4, "Еда": 5, "Страны": 6
         }
 
@@ -178,9 +186,13 @@ class App(ctk.CTk):
 
     def create_role_screen(self):
         self.role_frame = ctk.CTkFrame(self)
+
         try:
-            rolebg_image = ctk.CTkImage(light_image=Image.open("rolebg.png"), dark_image=Image.open("rolebg.png"),
-                                        size=(1920, 1080))
+            rolebg_image = ctk.CTkImage(
+                light_image=Image.open(resource_path("rolebg.png")),
+                dark_image=Image.open(resource_path("rolebg.png")),
+                size=(self.screen_width, self.screen_height)
+            )
             bg_label = ctk.CTkLabel(self.role_frame, image=rolebg_image, text="")
             bg_label.place(x=0, y=0, relwidth=1, relheight=1)
             self.rolebg_image = rolebg_image
@@ -199,9 +211,13 @@ class App(ctk.CTk):
 
     def create_game_screen(self):
         self.game_frame = ctk.CTkFrame(self)
+
         try:
-            gambck_image = ctk.CTkImage(light_image=Image.open("gamebg.png"), dark_image=Image.open("gamebg.png"),
-                                        size=(1920, 1080))
+            gambck_image = ctk.CTkImage(
+                light_image=Image.open(resource_path("gamebg.png")),
+                dark_image=Image.open(resource_path("gamebg.png")),
+                size=(self.screen_width, self.screen_height)
+            )
             bcg_label = ctk.CTkLabel(self.game_frame, image=gambck_image, text="")
             bcg_label.place(x=0, y=0, relwidth=1, relheight=1)
             self.gambck_image = gambck_image
@@ -231,7 +247,7 @@ class App(ctk.CTk):
         if ticks > 200:
             self.is_creating = False
             self.create_btn.configure(text="СОЗДАТЬ КОМНАТУ", state="normal")
-            messagebox.showerror("Ошибка", "Превышено время ожидания ответа от сервера.")
+            messagebox.showerror("Ошибка", "Превышено время ожидания ответа от сервера. Повторите попытку")
             return
 
         char = self.spinner_chars[self.spinner_idx % len(self.spinner_chars)]
@@ -330,6 +346,7 @@ class App(ctk.CTk):
             if hasattr(widget, 'pack_forget'):
                 widget.pack_forget()
         screen.pack(fill="both", expand=True)
+
 
 if __name__ == "__main__":
     app = App()
