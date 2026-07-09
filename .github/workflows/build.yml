@@ -30,14 +30,18 @@ jobs:
         if [ -f requirements-build.txt ]; then pip install -r requirements-build.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-
     - name: Build with PyInstaller
       shell: bash
       run: |
         if [ "${{ matrix.os }}" = "macos-latest" ]; then
           pyinstaller --noconfirm spy.spec
         else
-          pyinstaller --noconfirm --onedir main.py
+         
+          pyinstaller --noconfirm --onedir --windowed --name Spyfall main.py
+          
+         
+          cp *.png dist/Spyfall/ 2>/dev/null || true
+          cp *.ttf dist/Spyfall/ 2>/dev/null || true
         fi
 
     - name: Upload Artifacts
