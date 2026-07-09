@@ -55,6 +55,6 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='Spyfall.app',
-    icon=None,
+    icon='icon.ico',
     bundle_identifier=None,
 )
