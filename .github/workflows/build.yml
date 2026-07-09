@@ -8,21 +8,19 @@ on:
 jobs:
   build:
     strategy:
-
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     
     runs-on: ${{ matrix.os }}
 
     steps:
-   
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.14'
+        python-version: ${{ matrix.os == 'macos-latest' && '3.14' || '3.11' }}
 
     - name: Install dependencies
       shell: bash
@@ -32,8 +30,15 @@ jobs:
         if [ -f requirements-build.txt ]; then pip install -r requirements-build.txt; fi
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+
     - name: Build with PyInstaller
-      run: pyinstaller --noconfirm spy.spec
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" = "macos-latest" ]; then
+          pyinstaller --noconfirm spy.spec
+        else
+          pyinstaller --noconfirm --onedir main.py
+        fi
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
