@@ -57,27 +57,27 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    container: python:3.10-slim-buster
     steps:
-    - run: |
-        echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
-        echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list
-        echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.get
-
-    - run: apt-get update -o Acquire::Check-Valid-Until=false && apt-get install -y git binutils
-
     - uses: actions/checkout@v4
 
-    - run: |
-        pip install --upgrade pip
-        pip install customtkinter pillow websocket-client pyinstaller
-
-    - run: pyinstaller --onedir --name=Spyfall ui2.py
-
-    - run: |
-        cp *.png dist/Spyfall/ 2>/dev/null || true
-        cp *.ttf dist/Spyfall/ 2>/dev/null || true
+    - name: Build in Container
+      uses: docker://python:3.10-slim-buster
+      with:
+        args: >
+          sh -c "
+          echo 'deb http://archive.debian.org/debian buster main' > /etc/apt/sources.list &&
+          echo 'deb http://archive.debian.org/debian-security buster/updates main' >> /etc/apt/sources.list &&
+          echo 'Acquire::Check-Valid-Until \"false\";' > /etc/apt/apt.conf.d/99no-check-valid-until &&
+          apt-get update -o Acquire::Check-Valid-Until=false &&
+          apt-get install -y git binutils &&
+          pip install --upgrade pip &&
+          pip install customtkinter pillow websocket-client pyinstaller &&
+          pyinstaller --onedir --name=Spyfall ui2.py &&
+          cp *.png dist/Spyfall/ 2>/dev/null || true &&
+          cp *.ttf dist/Spyfall/ 2>/dev/null || true
+          "
 
     - uses: actions/upload-artifact@v4
       with:
-        name: Spyfall-Linux
+        name: Spyfall-Linux-Mint-Edition
+        path: dist/Spyfall/
