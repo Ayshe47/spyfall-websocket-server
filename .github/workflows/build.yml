@@ -1,51 +1,103 @@
-name: Build Multi-Platform Application
+name: Build Spyfall for Windows, Mac and Linux
 
 on:
   push:
-    branches: [ "main", "master" ]
-  workflow_dispatch: 
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-    
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
-    - name: Checkout code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install customtkinter pillow websocket-client pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onedir --name=Spyfall ui2.py
+
+    - name: Copy Assets (Windows)
+      run: |
+        if (Test-Path "*.png") { copy *.png dist\Spyfall\ }
+        if (Test-Path "*.ttf") { copy *.ttf dist\Spyfall\ }
+
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Spyfall-Windows-Edition
+        path: dist/Spyfall/
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.os == 'macos-latest' && '3.14' || '3.11' }}
+        python-version: '3.10'
 
     - name: Install dependencies
-      shell: bash
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
-        if [ -f requirements-build.txt ]; then pip install -r requirements-build.txt; fi
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install customtkinter pillow websocket-client pyinstaller
 
     - name: Build with PyInstaller
-      shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "macos-latest" ]; then
-          pyinstaller --noconfirm spy.spec
-        else
-         
-          pyinstaller --noconfirm --onedir --windowed --name Spyfall main.py
-          
-         
-          cp *.png dist/Spyfall/ 2>/dev/null || true
-          cp *.ttf dist/Spyfall/ 2>/dev/null || true
-        fi
+        pyinstaller --onedir --name=Spyfall ui2.py
 
-    - name: Upload Artifacts
+    - name: Copy Assets (Mac)
+      run: |
+        cp *.png dist/Spyfall/ 2>/dev/null || true
+        cp *.ttf dist/Spyfall/ 2>/dev/null || true
+
+    - name: Upload Mac Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: spyfall-build-${{ matrix.os }}
-        path: dist/
+        name: Spyfall-Mac-Edition
+        path: dist/Spyfall/
+
+  build-linux:
+    runs-on: ubuntu-latest
+   
+    container: python:3.10-slim-buster
+    steps:
+    - name: Install system tools
+      run: |
+        apt-get update && apt-get install -y git binutils
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install customtkinter pillow websocket-client pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onedir --name=Spyfall ui2.py
+
+    - name: Copy Assets (Linux)
+      run: |
+        cp *.png dist/Spyfall/ 2>/dev/null || true
+        cp *.ttf dist/Spyfall/ 2>/dev/null || true
+
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Spyfall-Linux-Mint-Edition
+        path: dist/Spyfall/
