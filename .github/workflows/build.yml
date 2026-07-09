@@ -69,15 +69,15 @@ jobs:
           echo 'deb http://archive.debian.org/debian-security buster/updates main' >> /etc/apt/sources.list &&
           echo 'Acquire::Check-Valid-Until \"false\";' > /etc/apt/apt.conf.d/99no-check-valid-until &&
           apt-get update -o Acquire::Check-Valid-Until=false &&
-          apt-get install -y git binutils &&
+          apt-get install -y git binutils python3-dev &&
           pip install --upgrade pip &&
           pip install customtkinter pillow websocket-client pyinstaller &&
-          pyinstaller --onedir --name=Spyfall ui2.py &&
-          cp *.png dist/Spyfall/ 2>/dev/null || true &&
-          cp *.ttf dist/Spyfall/ 2>/dev/null || true
+          pyinstaller --onefile --name=Spyfall ui2.py &&
+          cp *.png dist/ 2>/dev/null || true &&
+          cp *.ttf dist/ 2>/dev/null || true
           "
 
     - uses: actions/upload-artifact@v4
       with:
         name: Spyfall-Linux-Mint-Edition
-        path: dist/Spyfall/
+        path: dist/
