@@ -7,15 +7,16 @@ from tkinter import messagebox
 
 
 def resource_path(relative_path):
-    """Возвращает путь к ресурсу как при запуске из Python, так и после сборки PyInstaller."""
-    try:
-        base_path = sys._MEIPASS
-    except AttributeError:
-        base_path = os.path.abspath(".")
+   
+    if getattr(sys, 'frozen', False):
+
+        base_path = os.path.dirname(sys.executable)
+    else:
+
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
 
 
-# Вынос адреса сервера в переменные окружения (или использование дефолтного)
 SERVER_URL = os.getenv("SPYFALL_SERVER_URL", "wss://spyfall-websocket-server.onrender.com")
 
 
@@ -23,7 +24,6 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Получаем размеры экрана для динамических фонов
         self.screen_width = self.winfo_screenwidth()
         self.screen_height = self.winfo_screenheight()
 
@@ -31,11 +31,11 @@ class App(ctk.CTk):
         self.configure(fg_color="white")
         self.title("Spyfall Game")
 
-        # Загрузка кастомного шрифта (PyInstaller тоже подтянет)
+
         try:
             ctk.FontManager.load_font(resource_path("RussoOne.ttf"))
         except:
-            pass  # Если файла нет, используем системный
+            pass
 
         self.network = NetworkClient(url=SERVER_URL, callback=self.network_callback)
         self.is_host = False
@@ -62,6 +62,7 @@ class App(ctk.CTk):
         self.menu_frame = ctk.CTkFrame(self, fg_color="white")
 
         try:
+
             self.menu_bg = ctk.CTkImage(
                 light_image=Image.open(resource_path("firstScreen.png")),
                 size=(self.screen_width, self.screen_height)
@@ -95,6 +96,7 @@ class App(ctk.CTk):
         self.join_frame = ctk.CTkFrame(self, fg_color="white")
 
         try:
+
             join_bg_image = ctk.CTkImage(
                 light_image=Image.open(resource_path("joinbk2.png")),
                 dark_image=Image.open(resource_path("joinbk2.png")),
@@ -129,6 +131,7 @@ class App(ctk.CTk):
         self.lobby_frame = ctk.CTkFrame(self)
 
         try:
+
             bg_image = ctk.CTkImage(
                 light_image=Image.open(resource_path("joinbk.png")),
                 dark_image=Image.open(resource_path("joinbk.png")),
@@ -188,6 +191,7 @@ class App(ctk.CTk):
         self.role_frame = ctk.CTkFrame(self)
 
         try:
+
             rolebg_image = ctk.CTkImage(
                 light_image=Image.open(resource_path("rolebg.png")),
                 dark_image=Image.open(resource_path("rolebg.png")),
@@ -213,6 +217,7 @@ class App(ctk.CTk):
         self.game_frame = ctk.CTkFrame(self)
 
         try:
+            # Название файла: gamebg.png
             gambck_image = ctk.CTkImage(
                 light_image=Image.open(resource_path("gamebg.png")),
                 dark_image=Image.open(resource_path("gamebg.png")),
