@@ -10,31 +10,23 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
+    - run: |
         python -m pip install --upgrade pip
         pip install customtkinter pillow websocket-client pyinstaller
 
-    - name: Build with PyInstaller
-      run: |
-        pyinstaller --onedir --name=Spyfall ui2.py
+    - run: pyinstaller --onedir --name=Spyfall ui2.py
 
-    - name: Copy Assets (Windows)
-      run: |
+    - run: |
         if (Test-Path "*.png") { copy *.png dist\Spyfall\ }
         if (Test-Path "*.ttf") { copy *.ttf dist\Spyfall\ }
 
-    - name: Upload Windows Artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: Spyfall-Windows-Edition
         path: dist/Spyfall/
@@ -42,62 +34,50 @@ jobs:
   build-mac:
     runs-on: macos-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
+    - run: |
         python -m pip install --upgrade pip
         pip install customtkinter pillow websocket-client pyinstaller
 
-    - name: Build with PyInstaller
-      run: |
-        pyinstaller --onedir --name=Spyfall ui2.py
+    - run: pyinstaller --onedir --name=Spyfall ui2.py
 
-    - name: Copy Assets (Mac)
-      run: |
+    - run: |
         cp *.png dist/Spyfall/ 2>/dev/null || true
         cp *.ttf dist/Spyfall/ 2>/dev/null || true
 
-    - name: Upload Mac Artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
         name: Spyfall-Mac-Edition
         path: dist/Spyfall/
 
   build-linux:
     runs-on: ubuntu-latest
-   
     container: python:3.10-slim-buster
     steps:
-    - name: Install system tools
-      run: |
-        apt-get update && apt-get install -y git binutils
+    - run: |
+        echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
+        echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list
+        echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.get
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - run: apt-get update -o Acquire::Check-Valid-Until=false && apt-get install -y git binutils
 
-    - name: Install dependencies
-      run: |
+    - uses: actions/checkout@v4
+
+    - run: |
         pip install --upgrade pip
         pip install customtkinter pillow websocket-client pyinstaller
 
-    - name: Build with PyInstaller
-      run: |
-        pyinstaller --onedir --name=Spyfall ui2.py
+    - run: pyinstaller --onedir --name=Spyfall ui2.py
 
-    - name: Copy Assets (Linux)
-      run: |
+    - run: |
         cp *.png dist/Spyfall/ 2>/dev/null || true
         cp *.ttf dist/Spyfall/ 2>/dev/null || true
 
-    - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v4
       with:
-        name: Spyfall-Linux-Mint-Edition
-        path: dist/Spyfall/
+        name: Spyfall-Linux
