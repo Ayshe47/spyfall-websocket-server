@@ -1,83 +1,55 @@
-name: Build Spyfall for Windows, Mac and Linux
+name: Build Multi-Platform Application
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v5
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+       
+        python-version: '3.11'
 
-    - run: |
+    - name: Install dependencies
+      shell: bash
+      run: |
         python -m pip install --upgrade pip
-        pip install customtkinter pillow websocket-client pyinstaller
 
-    - run: pyinstaller --onedir --name=Spyfall ui2.py
+        pip install pyinstaller pillow customtkinter websocket-client websockets
+        if [ -f requirements-build.txt ]; then pip install -r requirements-build.txt; fi
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - run: |
-        if (Test-Path "*.png") { copy *.png dist\Spyfall\ }
-        if (Test-Path "*.ttf") { copy *.ttf dist\Spyfall\ }
+    - name: Build with PyInstaller
+      shell: bash
+      run: |
+  
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          SEP=";"
+        else
+          SEP=":"
+        fi
+   
+        pyinstaller --noconfirm --onefile --windowed --name Spyfall \
+          --collect-all customtkinter \
+          --add-data "*.png${SEP}." \
+          --add-data "*.ttf${SEP}." \
+          ui2.py
 
-    - uses: actions/upload-artifact@v4
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
       with:
-        name: Spyfall-Windows-Edition
-        path: dist/Spyfall/
-
-  build-mac:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - run: |
-        python -m pip install --upgrade pip
-        pip install customtkinter pillow websocket-client pyinstaller
-
-    - run: pyinstaller --onedir --name=Spyfall ui2.py
-
-    - run: |
-        cp *.png dist/Spyfall/ 2>/dev/null || true
-        cp *.ttf dist/Spyfall/ 2>/dev/null || true
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: Spyfall-Mac-Edition
-        path: dist/Spyfall/
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Build in Container
-      uses: docker://python:3.10-slim-buster
-      with:
-        args: >
-          sh -c "
-          echo 'deb http://archive.debian.org/debian buster main' > /etc/apt/sources.list &&
-          echo 'deb http://archive.debian.org/debian-security buster/updates main' >> /etc/apt/sources.list &&
-          echo 'Acquire::Check-Valid-Until \"false\";' > /etc/apt/apt.conf.d/99no-check-valid-until &&
-          apt-get update -o Acquire::Check-Valid-Until=false &&
-          apt-get install -y git binutils python3-dev &&
-          pip install --upgrade pip &&
-          pip install customtkinter pillow websocket-client pyinstaller &&
-          pyinstaller --onefile --name=Spyfall ui2.py &&
-          cp *.png dist/ 2>/dev/null || true &&
-          cp *.ttf dist/ 2>/dev/null || true
-          "
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: Spyfall-Linux-Mint-Edition
+        name: spyfall-build-${{ matrix.os }}
         path: dist/
