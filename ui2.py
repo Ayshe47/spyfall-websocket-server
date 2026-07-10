@@ -7,15 +7,14 @@ from tkinter import messagebox
 
 
 def resource_path(relative_path):
-   
-    if getattr(sys, 'frozen', False):
 
-        base_path = os.path.dirname(sys.executable)
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+
+        base_path = sys._MEIPASS
     else:
 
         base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
-
 
 SERVER_URL = os.getenv("SPYFALL_SERVER_URL", "wss://spyfall-websocket-server.onrender.com")
 
